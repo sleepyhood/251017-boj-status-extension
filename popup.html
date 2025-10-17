@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>BOJ Status</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        margin: 12px;
+        min-width: 220px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: #555;
+        margin-bottom: 6px;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      button {
+        margin-top: 8px;
+        padding: 8px 10px;
+        width: 100%;
+        border: none;
+        border-radius: 8px;
+      }
+      small {
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <label>Active student handle</label>
+    <input id="handle" placeholder="ex) kimcoding" />
+    <button id="save">Save</button>
+    <button id="clear">Clear local cache for this handle</button>
+    <p>
+      <small
+        >Tip: 학생 프로필(/user/&lt;handle&gt;)이나 제출
+        현황(/status?user_id=...)에 방문하면 자동으로 갱신됩니다.</small
+      >
+    </p>
+    <script src="popup.js"></script>
+  </body>
+</html>

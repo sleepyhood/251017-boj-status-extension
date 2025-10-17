@@ -1,0 +1,40 @@
+{
+"manifest_version": 3,
+"name": "BOJ Status Badges",
+"version": "0.1.0",
+"description": "Show solved/attempted badges on Baekjoon problem pages based on a student's record.",
+"permissions": ["storage"],
+"host_permissions": ["https://www.acmicpc.net/*"],
+"options_page": "options.html",
+"action": {
+"default_popup": "popup.html",
+"default_title": "BOJ Status"
+},
+"content_scripts": [
+{
+"matches": ["https://www.acmicpc.net/user/*"],
+"js": ["content/userScraper.js"],
+"run_at": "document_end"
+},
+{
+"matches": ["https://www.acmicpc.net/status*"],
+"js": ["content/statusScraper.js"],
+"run_at": "document_end"
+},
+{
+"matches": ["https://www.acmicpc.net/problem/*"],
+"js": ["content/problemBadge.js"],
+"run_at": "document_idle"
+},
+{
+"matches": [
+"https://www.acmicpc.net/problemset*",
+"https://www.acmicpc.net/workbook/view/*",
+"https://www.acmicpc.net/step/*"
+],
+"js": ["content/listBadges.js"],
+"run_at": "document_idle"
+}
+
+]
+}

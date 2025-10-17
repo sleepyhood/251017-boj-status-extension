@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>BOJ Status - Options</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>BOJ Status — Options</h1>
+  <p>저장된 학생 데이터(로컬) 관리</p>
+  <table id="tbl">
+    <thead><tr><th>Handle</th><th>Solved</th><th>Attempted</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <p>
+    <button id="export">Export JSON</button>
+    <input id="file" type="file" accept="application/json" />
+  </p>
+  <script src="options.js"></script>
+</body>
+</html>
