@@ -5,39 +5,74 @@
     .toLowerCase();
   if (!handle) return;
 
-  const RE_SOLVED = /맞은\s*문제|Solved/i;
-  const RE_PARTIAL =
-    /맞았지만\s*만점을\s*받지\s*못한\s*문제|부분\s*점수|Partial/i;
-  const RE_TRIED = /시도했지만\s*맞지\s*못한\s*문제|Tried/i;
+  // ✅ "제목(섹션 헤더)"만 매칭되도록 앵커 처리 (+ (숫자) 같은 카운트가 붙는 경우 허용)
+  const RE_SOLVED_TITLE = /^(맞은\s*문제|Solved)(\s*\(\d+\))?$/i;
 
-  function collectIdsByHeaderRegex(headerRegex) {
+  const RE_PARTIAL_TITLE =
+    /^(맞았지만\s*만점을\s*받지\s*못한\s*문제|부분\s*점수|Partial)(\s*\(\d+\))?$/i;
+
+  const RE_TRIED_TITLE =
+    /^(시도했지만\s*맞지\s*못한\s*문제|Tried)(\s*\(\d+\))?$/i;
+
+  function collectIdsBySectionTitle(titleRe, otherTitleRes) {
     const ids = new Set();
 
-    // '맞은 문제' 같은 텍스트를 가진 후보 헤더들 찾기
-    const candidates = [
-      ...document.querySelectorAll("h1,h2,h3,h4,strong,span,div,a"),
-    ].filter((el) => headerRegex.test((el.textContent || "").trim()));
+    const normText = (s) => (s || "").trim().replace(/\s+/g, " ");
 
-    for (const el of candidates) {
-      // nextElementSibling이 생길 때까지 위로 올라가며 기준점을 잡음(중첩 구조 대응)
-      let base = el;
-      while (base && !base.nextElementSibling) base = base.parentElement;
-      if (!base) continue;
+    // 제목 후보는 "헤더처럼 보이는 요소"로 제한 (div/span/a를 빼서 오탐을 크게 줄임)
+    const titleCandidates = [
+      ...document.querySelectorAll("h1,h2,h3,h4,h5,strong"),
+    ].filter((el) => {
+      const t = normText(el.textContent);
+      if (!t) return false;
+      if (t.length > 60) return false; // 너무 긴 텍스트는 헤더일 확률 낮음
+      if (!titleRe.test(t)) return false;
+      // 헤더 자체에 문제 링크가 들어있으면(리스트 내부) 오탐 가능 → 제외
+      if (el.querySelector?.('a[href^="/problem/"]')) return false;
+      return true;
+    });
 
-      // 다음 헤딩(H1~H4)이 나오기 전까지 sibling들을 훑어서 /problem/<id> 링크 수집
-      let node = base.nextElementSibling;
-      while (node) {
-        if (/^H[1-4]$/i.test(node.tagName)) break;
-
-        node.querySelectorAll?.('a[href^="/problem/"]').forEach((a) => {
-          const m = a.getAttribute("href")?.match(/\/problem\/(\d+)/);
-          if (m) ids.add(m[1]);
-        });
-
-        node = node.nextElementSibling;
+    function containerHasOtherTitles(container, selfTitleEl) {
+      const nodes = container.querySelectorAll("h1,h2,h3,h4,h5,strong");
+      for (const n of nodes) {
+        if (n === selfTitleEl) continue;
+        const t = normText(n.textContent);
+        if (!t) continue;
+        if (t.length > 60) continue;
+        // 다른 섹션 제목이 같은 컨테이너 안에 보이면, 이 컨테이너는 "너무 큼"
+        if (otherTitleRes.some((re) => re.test(t))) return true;
       }
+      return false;
+    }
 
-      // 하나라도 잡혔으면 과도 스캔 방지(동일 섹션 반복 후보 많을 때)
+    function pickBestContainer(titleEl) {
+      // titleEl을 포함하면서 /problem 링크가 있는 "가장 가까운(작은) 컨테이너"를 찾는다.
+      // 단, 다른 섹션 제목까지 포함하는 컨테이너가 되면 그 직전(best)을 사용한다.
+      let cur = titleEl;
+      let best = null;
+
+      while (cur && cur !== document.body) {
+        const hasLinks = !!cur.querySelector?.('a[href^="/problem/"]');
+        if (hasLinks) best = cur;
+
+        // 컨테이너가 다른 섹션 제목까지 포함해버리면, 직전 best가 정답
+        if (containerHasOtherTitles(cur, titleEl)) break;
+
+        cur = cur.parentElement;
+      }
+      return best;
+    }
+
+    for (const titleEl of titleCandidates) {
+      const container = pickBestContainer(titleEl);
+      if (!container) continue;
+
+      container.querySelectorAll('a[href^="/problem/"]').forEach((a) => {
+        const m = a.getAttribute("href")?.match(/\/problem\/(\d+)/);
+        if (m) ids.add(m[1]);
+      });
+
+      // 한 섹션에서라도 잡혔으면 종료(중복 후보 방지)
       if (ids.size > 0) break;
     }
 
@@ -45,9 +80,24 @@
   }
 
   function save() {
-    const solvedIds = collectIdsByHeaderRegex(RE_SOLVED);
-    const partialIds = collectIdsByHeaderRegex(RE_PARTIAL);
-    const triedIds = collectIdsByHeaderRegex(RE_TRIED);
+    const solvedIds = collectIdsBySectionTitle(RE_SOLVED_TITLE, [
+      RE_PARTIAL_TITLE,
+      RE_TRIED_TITLE,
+    ]);
+
+    const partialIds = collectIdsBySectionTitle(RE_PARTIAL_TITLE, [
+      RE_SOLVED_TITLE,
+      RE_TRIED_TITLE,
+    ]);
+
+    const triedIds = collectIdsBySectionTitle(RE_TRIED_TITLE, [
+      RE_SOLVED_TITLE,
+      RE_PARTIAL_TITLE,
+    ]);
+
+    // ✅ 안전장치: 섞여 들어온 건 제거(정상이라면 보통 없어야 함)
+    partialIds.forEach((pid) => solvedIds.delete(pid));
+    triedIds.forEach((pid) => solvedIds.delete(pid));
 
     chrome.storage.local.get(null, (data) => {
       const key = `user:${handle}`;

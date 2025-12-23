@@ -2,9 +2,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const input = document.getElementById("handle");
   const save = document.getElementById("save");
   const clearBtn = document.getElementById("clear");
+  const modeSel = document.getElementById("mode");
 
-  chrome.storage.local.get(["activeHandle"], (data) => {
+  chrome.storage.local.get(["activeHandle", "badgeMode"], (data) => {
     if (data.activeHandle) input.value = data.activeHandle;
+    modeSel.value = data.badgeMode || "single";
+  });
+
+  modeSel.addEventListener("change", () => {
+    chrome.storage.local.set({ badgeMode: modeSel.value });
   });
 
   save.addEventListener("click", () => {

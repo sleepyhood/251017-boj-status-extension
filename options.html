@@ -7,15 +7,41 @@
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; }
     table { border-collapse: collapse; width: 100%; }
     th, td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
+    .row { display:flex; gap:10px; align-items:center; margin: 10px 0 14px; flex-wrap:wrap; }
+    select, button { padding: 6px 10px; border-radius: 8px; }
+    small { color:#666; }
   </style>
 </head>
 <body>
   <h1>BOJ Status — Options</h1>
   <p>저장된 학생 데이터(로컬) 관리</p>
+
+  <!-- ✅ 추가 -->
+  <div class="row">
+    <label><b>뱃지 표시 범위</b></label>
+    <select id="badgeMode">
+      <option value="single">단일(Active handle)</option>
+      <option value="all">전체 학생(저장된 전원)</option>
+      <option value="selected">선택 학생(체크한 학생)</option>
+    </select>
+    <button id="selAll" type="button">전체 선택</button>
+    <button id="selNone" type="button">선택 해제</button>
+    <small>Tip: “선택 학생” 모드에서 아래 체크로 관리</small>
+  </div>
+
   <table id="tbl">
-    <thead><tr><th>Handle</th><th>Solved</th><th>Attempted</th><th>Actions</th></tr></thead>
+    <thead>
+      <tr>
+        <th>Include</th> <!-- ✅ 추가 -->
+        <th>Handle</th>
+        <th>Solved</th>
+        <th>Attempted</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
     <tbody></tbody>
   </table>
+
   <p>
     <button id="export">Export JSON</button>
     <input id="file" type="file" accept="application/json" />
