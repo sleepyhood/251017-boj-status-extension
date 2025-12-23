@@ -1,11 +1,11 @@
 (() => {
   const url = new URL(location.href);
-  const handle = url.searchParams.get("user_id");
+  const handle = (url.searchParams.get("user_id") || "").trim().toLowerCase();
   if (!handle) return;
 
   function detectVerdictText(row) {
     const el = row.querySelector(".result, .status, .verdict, td[title]");
-    let t = el ? (el.textContent || el.getAttribute("title") || "") : "";
+    let t = el ? el.textContent || el.getAttribute("title") || "" : "";
     if (!t) {
       const tds = [...row.querySelectorAll("td")];
       t = tds.map((td) => (td.textContent || "").trim()).join(" ");

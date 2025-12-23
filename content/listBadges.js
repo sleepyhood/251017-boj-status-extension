@@ -89,8 +89,17 @@
 
   const run = () => {
     chrome.storage.local.get(null, (data) => {
-      const handle = data.activeHandle;
-      const rec = handle ? data[`user:${handle}`] : null;
+      const handle = (data.activeHandle || "").trim().toLowerCase();
+      let rec = handle ? data[`user:${handle}`] : null;
+      if (!rec && handle) {
+        const foundKey = Object.keys(data).find(
+          (k) => k.startsWith("user:") && k.slice(5).toLowerCase() === handle
+        );
+        if (foundKey) {
+          rec = data[foundKey];
+          chrome.storage.local.set({ [`user:${handle}`]: rec });
+        }
+      }
       ensureStyle();
       scanAndRender(rec, handle);
     });

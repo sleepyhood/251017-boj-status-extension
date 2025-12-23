@@ -1,19 +1,22 @@
 (() => {
   const parts = location.pathname.split("/").filter(Boolean);
-  const handle = decodeURIComponent(parts[1] || ""); // /user/<handle>
+  const handle = decodeURIComponent(parts[1] || "")
+    .trim()
+    .toLowerCase();
   if (!handle) return;
 
   const RE_SOLVED = /맞은\s*문제|Solved/i;
-  const RE_PARTIAL = /맞았지만\s*만점을\s*받지\s*못한\s*문제|부분\s*점수|Partial/i;
+  const RE_PARTIAL =
+    /맞았지만\s*만점을\s*받지\s*못한\s*문제|부분\s*점수|Partial/i;
   const RE_TRIED = /시도했지만\s*맞지\s*못한\s*문제|Tried/i;
 
   function collectIdsByHeaderRegex(headerRegex) {
     const ids = new Set();
 
     // '맞은 문제' 같은 텍스트를 가진 후보 헤더들 찾기
-    const candidates = [...document.querySelectorAll("h1,h2,h3,h4,strong,span,div,a")].filter(
-      (el) => headerRegex.test((el.textContent || "").trim())
-    );
+    const candidates = [
+      ...document.querySelectorAll("h1,h2,h3,h4,strong,span,div,a"),
+    ].filter((el) => headerRegex.test((el.textContent || "").trim()));
 
     for (const el of candidates) {
       // nextElementSibling이 생길 때까지 위로 올라가며 기준점을 잡음(중첩 구조 대응)
@@ -64,7 +67,8 @@
 
       // tried (TRIED)
       triedIds.forEach((pid) => {
-        if (!cur.solved[pid] && !cur.attempts[pid]) cur.attempts[pid] = { verdict: "TRIED", ts: now };
+        if (!cur.solved[pid] && !cur.attempts[pid])
+          cur.attempts[pid] = { verdict: "TRIED", ts: now };
       });
 
       cur.updatedAt = now;
