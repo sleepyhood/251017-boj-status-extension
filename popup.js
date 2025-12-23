@@ -8,13 +8,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   save.addEventListener("click", () => {
-    const handle = input.value.trim();
+    const handle = input.value.trim().toLowerCase();
     if (!handle) return;
     chrome.storage.local.set({ activeHandle: handle }, () => window.close());
   });
 
   clearBtn.addEventListener("click", () => {
-    const handle = input.value.trim();
+    const handle = input.value.trim().toLowerCase();
     if (!handle) return;
     chrome.storage.local.remove(`user:${handle}`, () => window.close());
   });

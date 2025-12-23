@@ -44,12 +44,28 @@
   }
 
   chrome.storage.local.get(null, (data) => {
-    const handle = data.activeHandle;
+    const handle = (data.activeHandle || "").trim().toLowerCase();
     if (!handle) {
       render("핸들을 설정하세요", "확장 아이콘 클릭");
       return;
     }
-    const rec = data[`user:${handle}`];
+    // const rec = data[`user:${handle}`];
+    let rec = data[`user:${handle}`];
+
+if (!rec) {
+const foundKey = Object.keys(data).find(
+(k) => k.startsWith("user:") && k.slice(5).toLowerCase() === handle
+);
+
+if (foundKey) {
+rec = data[foundKey];
+
+chrome.storage.local.set({ [`user:${handle}`]: rec }, () => {
+});
+
+}
+} 
+
     if (!rec) {
       render("데이터 없음", handle);
       return;

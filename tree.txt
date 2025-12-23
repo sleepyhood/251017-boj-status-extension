@@ -1,0 +1,18 @@
+폴더 PATH의 목록입니다.
+볼륨 일련 번호는 4840-F902입니다.
+C:.
+|   manifest.json
+|   options.html
+|   options.js
+|   popup.html
+|   popup.js
+|   README.md
+|   tree.txt
+|   
+\---content
+        listBadges.js
+        problemBadge.js
+        problemsetBadges.js
+        statusScraper.js
+        userScraper.js
+        
