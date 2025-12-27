@@ -6,126 +6,138 @@
   if (!handle) return;
 
   // ✅ "제목(섹션 헤더)"만 매칭되도록 앵커 처리 (+ (숫자) 같은 카운트가 붙는 경우 허용)
-  const RE_SOLVED_TITLE = /^(맞은\s*문제|Solved)(\s*\(\d+\))?$/i;
+  // ✅ "섹션 제목"에만 매칭되도록 앵커(^$) + 카운트( (123) ) 허용
+// ✅ title 텍스트 뒤에 카운트가 " (123)" 또는 " 123"로 붙어도 매칭되게
+  const RE_SOLVED_TITLE =
+    /^(맞은\s*문제|Solved(\s*Problems?)?)(\s*(\(\d+\)|\d+))?$/i;
 
   const RE_PARTIAL_TITLE =
-    /^(맞았지만\s*만점을\s*받지\s*못한\s*문제|부분\s*점수|Partial)(\s*\(\d+\))?$/i;
+    /^(맞았지만\s*만점을\s*받지\s*못한\s*문제|부분\s*점수|Partial(\s*Problems?)?)(\s*(\(\d+\)|\d+))?$/i;
 
   const RE_TRIED_TITLE =
-    /^(시도했지만\s*맞지\s*못한\s*문제|Tried)(\s*\(\d+\))?$/i;
+    /^(시도했지만\s*맞지\s*못한\s*문제|Tried(\s*Problems?)?)(\s*(\(\d+\)|\d+))?$/i;
 
-  function collectIdsBySectionTitle(titleRe, otherTitleRes) {
-    const ids = new Set();
 
-    const normText = (s) => (s || "").trim().replace(/\s+/g, " ");
+function normalizeText(s) {
+  return (s || "").replace(/\s+/g, " ").trim();
+}
 
-    // 제목 후보는 "헤더처럼 보이는 요소"로 제한 (div/span/a를 빼서 오탐을 크게 줄임)
-    const titleCandidates = [
-      ...document.querySelectorAll("h1,h2,h3,h4,h5,strong"),
-    ].filter((el) => {
-      const t = normText(el.textContent);
-      if (!t) return false;
-      if (t.length > 60) return false; // 너무 긴 텍스트는 헤더일 확률 낮음
-      if (!titleRe.test(t)) return false;
-      // 헤더 자체에 문제 링크가 들어있으면(리스트 내부) 오탐 가능 → 제외
-      if (el.querySelector?.('a[href^="/problem/"]')) return false;
-      return true;
-    });
+function collectIdsBySectionTitle(titleRe) {
+  const ids = new Set();
 
-    function containerHasOtherTitles(container, selfTitleEl) {
-      const nodes = container.querySelectorAll("h1,h2,h3,h4,h5,strong");
-      for (const n of nodes) {
-        if (n === selfTitleEl) continue;
-        const t = normText(n.textContent);
-        if (!t) continue;
-        if (t.length > 60) continue;
-        // 다른 섹션 제목이 같은 컨테이너 안에 보이면, 이 컨테이너는 "너무 큼"
-        if (otherTitleRes.some((re) => re.test(t))) return true;
-      }
-      return false;
-    }
+  // 1) BOJ 프로필은 보통 bootstrap panel 구조라 여기서 먼저 찾는다
+  const panels = [...document.querySelectorAll(".panel")];
+  for (const panel of panels) {
+    const headingEl =
+      panel.querySelector(".panel-heading") ||
+      panel.querySelector(".panel-title") ||
+      panel.querySelector("h1,h2,h3,h4,strong");
 
-    function pickBestContainer(titleEl) {
-      // titleEl을 포함하면서 /problem 링크가 있는 "가장 가까운(작은) 컨테이너"를 찾는다.
-      // 단, 다른 섹션 제목까지 포함하는 컨테이너가 되면 그 직전(best)을 사용한다.
-      let cur = titleEl;
-      let best = null;
+    const title = normalizeText(headingEl?.textContent);
+    if (!title) continue;
 
-      while (cur && cur !== document.body) {
-        const hasLinks = !!cur.querySelector?.('a[href^="/problem/"]');
-        if (hasLinks) best = cur;
-
-        // 컨테이너가 다른 섹션 제목까지 포함해버리면, 직전 best가 정답
-        if (containerHasOtherTitles(cur, titleEl)) break;
-
-        cur = cur.parentElement;
-      }
-      return best;
-    }
-
-    for (const titleEl of titleCandidates) {
-      const container = pickBestContainer(titleEl);
-      if (!container) continue;
-
-      container.querySelectorAll('a[href^="/problem/"]').forEach((a) => {
+    if (titleRe.test(title)) {
+      const root = panel.querySelector(".panel-body") || panel;
+      root.querySelectorAll('a[href^="/problem/"]').forEach((a) => {
         const m = a.getAttribute("href")?.match(/\/problem\/(\d+)/);
         if (m) ids.add(m[1]);
       });
-
-      // 한 섹션에서라도 잡혔으면 종료(중복 후보 방지)
-      if (ids.size > 0) break;
+      return ids; // 한 섹션만 찾으면 끝
     }
-
-    return ids;
   }
 
-  function save() {
-    const solvedIds = collectIdsBySectionTitle(RE_SOLVED_TITLE, [
-      RE_PARTIAL_TITLE,
-      RE_TRIED_TITLE,
-    ]);
+  // 2) 혹시 panel 구조가 아니면(레이아웃 변경 등) 제한된 헤더 셀렉터로 fallback
+  const headingCandidates = [
+    ...document.querySelectorAll(".panel-heading,.panel-title,h1,h2,h3,h4,strong"),
+  ];
 
-    const partialIds = collectIdsBySectionTitle(RE_PARTIAL_TITLE, [
-      RE_SOLVED_TITLE,
-      RE_TRIED_TITLE,
-    ]);
+  const h = headingCandidates.find((el) => titleRe.test(normalizeText(el.textContent)));
+  const container = h?.closest?.(".panel") || h?.parentElement;
+  if (!container) return ids;
 
-    const triedIds = collectIdsBySectionTitle(RE_TRIED_TITLE, [
-      RE_SOLVED_TITLE,
-      RE_PARTIAL_TITLE,
-    ]);
-
-    // ✅ 안전장치: 섞여 들어온 건 제거(정상이라면 보통 없어야 함)
-    partialIds.forEach((pid) => solvedIds.delete(pid));
-    triedIds.forEach((pid) => solvedIds.delete(pid));
-
-    chrome.storage.local.get(null, (data) => {
-      const key = `user:${handle}`;
-      const cur = data[key] || { solved: {}, attempts: {}, updatedAt: 0 };
-      const now = Date.now();
-
-      // solved
-      solvedIds.forEach((pid) => {
-        cur.solved[pid] = true;
-        delete cur.attempts[pid];
-      });
-
-      // partial (PA)
-      partialIds.forEach((pid) => {
-        if (!cur.solved[pid]) cur.attempts[pid] = { verdict: "PA", ts: now };
-      });
-
-      // tried (TRIED)
-      triedIds.forEach((pid) => {
-        if (!cur.solved[pid] && !cur.attempts[pid])
-          cur.attempts[pid] = { verdict: "TRIED", ts: now };
-      });
-
-      cur.updatedAt = now;
-
-      // ✅ activeHandle은 popup에서만 관리 (여기서 덮어쓰지 않음)
-      chrome.storage.local.set({ [key]: cur, lastScrapedHandle: handle });
+  (container.querySelector(".panel-body") || container)
+    .querySelectorAll('a[href^="/problem/"]')
+    .forEach((a) => {
+      const m = a.getAttribute("href")?.match(/\/problem\/(\d+)/);
+      if (m) ids.add(m[1]);
     });
+
+  return ids;
+}
+
+
+  function save() {
+const solvedIds = collectIdsBySectionTitle(RE_SOLVED_TITLE);
+const partialIds = collectIdsBySectionTitle(RE_PARTIAL_TITLE);
+const triedIds = collectIdsBySectionTitle(RE_TRIED_TITLE);
+
+// ✅ 안전장치: partial/tried에 잡힌 건 solved에서 제거
+partialIds.forEach((pid) => solvedIds.delete(pid));
+triedIds.forEach((pid) => solvedIds.delete(pid));
+
+chrome.storage.local.get(null, (data) => {
+  const key = `user:${handle}`;
+  const prev = data[key] || { solved: {}, attempts: {}, updatedAt: 0 };
+
+  const now = Date.now();
+
+  // ✅ 1) 이번 스크랩을 "정답 스냅샷"으로 반영해서,
+  //     과거 버그로 잘못 들어간 solved/attempts가 자동 정정되게 만든다.
+  const newSolved = {};
+  solvedIds.forEach((pid) => {
+    newSolved[pid] = true;
+  });
+
+  // attempts는 statusScraper가 더 자세한 verdict(WA/TLE 등)을 넣었을 수도 있으니,
+  // "멤버십"은 프로필을 따르되, 기존 verdict가 더 구체적이면 유지
+  const prevAttempts = prev.attempts || {};
+  const newAttempts = {};
+
+  partialIds.forEach((pid) => {
+    if (newSolved[pid]) return;
+    const old = prevAttempts[pid];
+    newAttempts[pid] = {
+      verdict: "PA",                 // 프로필의 의미는 '부분 점수'
+      ts: old?.ts || now,
+    };
+  });
+
+  triedIds.forEach((pid) => {
+    if (newSolved[pid]) return;
+    const old = prevAttempts[pid];
+    newAttempts[pid] = {
+      // old.verdict가 WA/TLE/RE 같은 더 구체적인 값이면 유지,
+      // 없으면 TRIED로 둔다
+      verdict: old?.verdict && old.verdict !== "PA" ? old.verdict : "TRIED",
+      ts: old?.ts || now,
+    };
+  });
+
+  const cur = {
+    ...prev,
+    solved: newSolved,
+    attempts: newAttempts,
+    updatedAt: now,
+    scrapeMeta: {
+      source: "profile",
+      solved: solvedIds.size,
+      partial: partialIds.size,
+      tried: triedIds.size,
+      at: now,
+    },
+  };
+
+  // ✅ 2) 디버그 로그(수집이 실제로 됐는지 확인용)
+  console.info("[BOJ Status] profile scrape", {
+    handle,
+    solved: solvedIds.size,
+    partial: partialIds.size,
+    tried: triedIds.size,
+  });
+
+  chrome.storage.local.set({ [key]: cur, lastScrapedHandle: handle });
+});
+
   }
 
   // user 페이지가 늦게 렌더링되는 케이스 대비: 0.3s 간격으로 몇 번 재시도

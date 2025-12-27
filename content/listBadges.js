@@ -1,3 +1,27 @@
+let __boj_alive = true;
+
+function safeStorageGet(keys, cb) {
+  if (!__boj_alive) return;
+
+  try {
+    // runtime.id가 없으면 이미 컨텍스트가 끊긴 상태
+    if (!chrome?.runtime?.id) {
+      __boj_alive = false;
+      return;
+    }
+
+    chrome.storage.local.get(keys, (data) => {
+      // 콜백에서는 lastError로 조용히 무시
+      if (chrome.runtime?.lastError) return;
+      cb(data);
+    });
+  } catch (e) {
+    // Extension context invalidated 등
+    __boj_alive = false;
+  }
+}
+
+
 (() => {
   // 목록 페이지에서만 동작
   const path = location.pathname;
@@ -530,7 +554,7 @@
   }
 
   const run = () => {
-    chrome.storage.local.get(null, (data) => {
+    safeStorageGet(null, (data) => {
       const allHandleMap = parseAllHandles(data);
       const handles = getHandlesInScope(data, allHandleMap);
 

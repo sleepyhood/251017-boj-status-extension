@@ -33,6 +33,50 @@
   }
 
   /* Badge styling */
+    /* ✅ badge에 dot + caret(문제집 pill과 패밀리룩) */
+  #boj-status-badge::before{
+    content:"";
+    width: 8px; height: 8px;
+    border-radius: 999px !important;
+    background: currentColor;
+    box-shadow: 0 0 0 3px rgba(0,0,0,.05);
+    flex: 0 0 auto;
+  }
+  #boj-status-badge::after{
+    content:"▾";
+    font-size: 12px;
+    opacity: .55;
+    margin-left: 2px;
+    line-height: 1;
+  }
+
+  /* ✅ 상태별 컬러(문제집 뱃지처럼: 맞으면 초록, 틀리면 빨강) */
+  #boj-status-badge.ac{
+    color:#16a34a;
+    border-color: rgba(34,197,94,.28);
+    background: rgba(34,197,94,.10);
+  }
+  #boj-status-badge.pa{
+    color:#f59e0b;
+    border-color: rgba(245,158,11,.30);
+    background: rgba(245,158,11,.12);
+  }
+  #boj-status-badge.tried{
+    color:#ef4444;
+    border-color: rgba(239,68,68,.28);
+    background: rgba(239,68,68,.10);
+  }
+  #boj-status-badge.none{
+    color: var(--boj-muted);
+    border-color: rgba(148,163,184,.30);
+    background: rgba(148,163,184,.10);
+  }
+  #boj-status-badge.mix{
+    color: var(--boj-accent);
+    border-color: rgba(99,102,241,.28);
+    background: rgba(99,102,241,.10);
+  }
+  /* Badge Container */
   #boj-status-badge {
   
     position: fixed;
@@ -53,7 +97,7 @@
     display: flex; align-items: center; gap: 8px;
   }
   #boj-status-badge:hover { transform: translateY(-2px) scale(1.02); background: var(--boj-surface-2); }
-  #boj-status-badge.mix { border-left: 4px solid var(--boj-accent); }
+  /*#boj-status-badge.mix { border-left: 4px solid var(--boj-accent); }*/
 
   /* Popover Animation */
   @keyframes bojPopIn {
@@ -162,18 +206,29 @@
   #${POPOVER_ID} .chip:hover { background: rgba(30,41,59,0.5); }
 }
   /* Action Buttons */
-  #${POPOVER_ID} .btn {
+  /* ✅ Action Buttons: 섹션 톤(상태색)과 통일 */
+  #${POPOVER_ID} .btn{
     padding: 4px 12px;
-      border-radius: calc(var(--boj-radius) - 12px) !important;
+    border-radius: calc(var(--boj-radius) - 12px) !important;
 
-    border: 1px solid var(--boj-border);
-    background: var(--boj-surface);
-    color: var(--boj-text);
-    font-size: 11px; font-weight: 700;
+    border: 1px solid currentColor;
+    background: transparent;
+
+    /* 섹션(tone-*) 안에 있으므로 --status-color 사용 가능 */
+    color: var(--status-color);
+
+    font-size: 11px;
+    font-weight: 800;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.18s ease;
   }
-  #${POPOVER_ID} .btn:hover { background: var(--boj-text); color: var(--boj-surface); }
+  #${POPOVER_ID} .btn:hover{
+    background: var(--status-color);
+    border-color: var(--status-color);
+    color: white;
+    transform: translateY(-1px);
+  }
+
   
   #${POPOVER_ID} .close {
     width: 28px; height: 28px; border-radius: 50% !important;
