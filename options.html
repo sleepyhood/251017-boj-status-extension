@@ -1,51 +1,368 @@
 <!doctype html>
-<html>
+<html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>BOJ Status - Options</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BOJ Status Settings</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
-    .row { display:flex; gap:10px; align-items:center; margin: 10px 0 14px; flex-wrap:wrap; }
-    select, button { padding: 6px 10px; border-radius: 8px; }
-    small { color:#666; }
+    /* 1. Design Tokens (listBadges.js와 동일) */
+    :root {
+      --boj-bg: #f8fafc;
+      --boj-text: #1e293b;
+      --boj-muted: #64748b;
+      --boj-border: #e2e8f0;
+      --boj-surface: #ffffff;
+      --boj-surface-hover: #f1f5f9;
+      --boj-shadow: 0 4px 6px -1px rgba(0,0,0,.05), 0 10px 15px -3px rgba(0,0,0,.05);
+      --boj-accent: #6366f1;
+      --boj-accent-hover: #4f46e5;
+      --boj-danger: #ef4444;
+      --boj-radius: 16px;
+      --boj-trans: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --boj-bg: #0f172a;
+        --boj-text: #f1f5f9;
+        --boj-muted: #94a3b8;
+        --boj-border: #334155;
+        --boj-surface: #1e293b;
+        --boj-surface-hover: #334155;
+        --boj-shadow: 0 10px 15px -3px rgba(0,0,0,.5);
+      }
+    }
+
+    /* 2. Global Reset */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background-color: var(--boj-bg);
+      color: var(--boj-text);
+      line-height: 1.5;
+    }
+
+    /* 3. Layout Container */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* 4. Header Section */
+    header {
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin: 0 0 8px 0;
+      background: linear-gradient(135deg, var(--boj-accent) 0%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+    .subtitle {
+      color: var(--boj-muted);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* 5. Card Components */
+    .card {
+      background: var(--boj-surface);
+      border: 1px solid var(--boj-border);
+      border-radius: var(--boj-radius);
+      box-shadow: var(--boj-shadow);
+      padding: 24px;
+      transition: var(--boj-trans);
+    }
+
+    /* 6. Form Controls */
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--boj-muted);
+      margin-bottom: 6px;
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    select, input[type="text"], input[type="file"]::file-selector-button {
+      appearance: none;
+      background-color: var(--boj-bg);
+      border: 1px solid var(--boj-border);
+      color: var(--boj-text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      outline: none;
+      transition: var(--boj-trans);
+      width: 100%;
+      cursor: pointer;
+    }
+
+    /* Select Custom Arrow */
+    .select-wrapper {
+      position: relative;
+      max-width: 300px;
+    }
+    .select-wrapper::after {
+      content: "▾";
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--boj-muted);
+      font-size: 12px;
+    }
+    
+    select:focus, input:focus {
+      border-color: var(--boj-accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    /* 7. Buttons */
+    button, input[type="file"]::file-selector-button {
+      border: 1px solid var(--boj-border);
+      background: var(--boj-surface);
+      color: var(--boj-text);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--boj-trans);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    
+    button:hover {
+      background: var(--boj-surface-hover);
+      transform: translateY(-1px);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+
+    /* Primary Button Style */
+    button.primary {
+      background: var(--boj-accent);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+    }
+    button.primary:hover {
+      background: var(--boj-accent-hover);
+      box-shadow: 0 4px 6px rgba(99, 102, 241, 0.4);
+    }
+
+    /* 8. The Table (Data Grid) */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--boj-border);
+      border-radius: 12px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      text-align: left;
+    }
+    
+    thead {
+      background: var(--boj-bg);
+      border-bottom: 1px solid var(--boj-border);
+    }
+    
+    th {
+      padding: 14px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--boj-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--boj-border);
+      color: var(--boj-text);
+    }
+    
+    tr:last-child td { border-bottom: none; }
+    
+    tbody tr {
+      transition: background 0.15s;
+    }
+    tbody tr:hover {
+      background-color: var(--boj-surface-hover);
+    }
+
+    /* Checkbox Styling */
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--boj-accent);
+      cursor: pointer;
+    }
+
+    /* 9. Utility Classes */
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .flex-between {
+      justify-content: space-between;
+    }
+    .text-sm { font-size: 13px; color: var(--boj-muted); }
+    .mt-4 { margin-top: 16px; }
+    .w-full { width: 100%; }
+    
+    /* File Input Styling */
+    input[type="file"] {
+      font-size: 13px;
+      color: var(--boj-muted);
+    }
+    input[type="file"]::file-selector-button {
+      margin-right: 12px;
+    }
+a.handle-link{
+  color: var(--boj-accent);
+  text-decoration: none;
+  font-weight: 700;
+}
+a.handle-link:hover{ text-decoration: underline; }
+input.memo{
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--boj-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: var(--boj-text);
+}
+input.memo:focus{
+  border-color: var(--boj-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  outline: none;
+}
+
   </style>
 </head>
 <body>
-  <h1>BOJ Status — Options</h1>
-  <p>저장된 학생 데이터(로컬) 관리</p>
 
-  <!-- ✅ 추가 -->
-  <div class="row">
-    <label><b>뱃지 표시 범위</b></label>
-    <select id="badgeMode">
-      <option value="single">단일(Active handle)</option>
-      <option value="all">전체 학생(저장된 전원)</option>
-      <option value="selected">선택 학생(체크한 학생)</option>
-    </select>
-    <button id="selAll" type="button">전체 선택</button>
-    <button id="selNone" type="button">선택 해제</button>
-    <small>Tip: “선택 학생” 모드에서 아래 체크로 관리</small>
-  </div>
+<div class="container">
+  <header>
+    <h1>BOJ Status Options</h1>
+    <div class="subtitle">학생 데이터 관리 및 뱃지 표시 설정</div>
+  </header>
 
-  <table id="tbl">
-    <thead>
-      <tr>
-        <th>Include</th> <!-- ✅ 추가 -->
-        <th>Handle</th>
-        <th>Solved</th>
-        <th>Attempted</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<section id="students" class="card" style="overflow: hidden;">
+    <div class="row flex-between" style="margin-bottom: 16px;">
+      <div>
+        <label for="badgeMode">뱃지 표시 모드</label>
+        <div class="select-wrapper">
+          <select id="badgeMode">
+            <option value="single">단일 (Active handle)</option>
+            <option value="all">전체 (All saved data)</option>
+            <option value="selected">선택 (Selected only)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div style="text-align: right;">
+         <label style="visibility: hidden;">Actions</label>
+         <div class="row">
+           <button id="selAll" type="button">전체 선택</button>
+           <button id="selNone" type="button">선택 해제</button>
+         </div>
+      </div>
+    </div>
+    
+    <p class="text-sm">
+      <span style="display:inline-block; margin-right:4px;">💡</span>
+      <b>Tip:</b> "선택" 모드를 활성화하면 아래 목록에서 체크된 학생의 상태만 뱃지에 반영됩니다.
+    </p>
+  </section>
 
-  <p>
-    <button id="export">Export JSON</button>
-    <input id="file" type="file" accept="application/json" />
-  </p>
-  <script src="options.js"></script>
+  <section class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 20px 24px; border-bottom: 1px solid var(--boj-border); background: var(--boj-bg);">
+      <h2 style="margin:0; font-size: 16px; font-weight: 700;">저장된 학생 목록</h2>
+    </div>
+    
+    <div class="table-container" style="border:none; border-radius:0;">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th width="60" style="text-align:center;">Include</th>
+            <th>Handle</th>
+            <th>Memo</th>
+
+            <th>Solved</th>
+            <th>Attempted</th>
+            <th>Last Updated</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card row flex-between">
+    <div>
+      <label>데이터 백업</label>
+      <button id="export" class="primary">JSON 내보내기 (Export)</button>
+    </div>
+    
+    <div>
+      <label for="file">데이터 복원</label>
+      <input id="file" type="file" accept="application/json" />
+    </div>
+  </section>
+
+  <section class="card">
+  <details>
+    <summary style="cursor:pointer; font-weight:700;">JSON 포맷 예시 보기</summary>
+    <pre style="margin-top:12px; padding:12px; background:var(--boj-bg); border:1px solid var(--boj-border); border-radius:12px; overflow:auto; font-size:12px;">
+{
+  "badgeMode": "selected",
+  "activeHandle": "teacher",
+  "selectedHandles": ["alice", "bob"],
+  "user:alice": {
+    "note": "앨리스(01반)",
+    "updatedAt": 1730000000000,
+    "solved": { "1000": true, "2557": true },
+    "attempts": { "1001": { "verdict": "WA", "ts": 1730000000000 } }
+  },
+  "user:bob": {
+    "note": "밥(동아리)",
+    "updatedAt": 1730000000000,
+    "solved": {},
+    "attempts": { "2557": { "verdict": "TRIED", "ts": 1730000000000 } }
+  }
+}
+    </pre>
+  </details>
+</section>
+
+</div>
+
+<script src="options.js"></script>
 </body>
 </html>

@@ -3,6 +3,126 @@
   const handle = (url.searchParams.get("user_id") || "").trim().toLowerCase();
   if (!handle) return;
 
+  // ===== Toast UI (status page) =====
+  const TOAST_STYLE_ID = "boj-status-toast-style";
+  const TOAST_ID = "boj-status-toast";
+  let toastShown = false;
+
+  function ensureToastStyle() {
+    if (document.getElementById(TOAST_STYLE_ID)) return;
+    const css = `
+#${TOAST_ID}{
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 10px 12px;
+  border-radius: 14px  !important;  
+  border: 1px solid rgba(226,232,240,.8);
+  background: rgba(255,255,255,.92);
+  color: #1e293b;
+  box-shadow: 0 10px 25px rgba(0,0,0,.12);
+  backdrop-filter: blur(10px);
+  font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+#${TOAST_ID} .msg{ display:flex; flex-direction:column; gap:3px; }
+#${TOAST_ID} .title{ font-weight: 900; }
+#${TOAST_ID} .sub{ font-size: 11px; opacity:.7; }
+#${TOAST_ID} .btn{
+  border: 1px solid rgba(226,232,240,.9);
+  background: rgba(99,102,241,.10);
+  color: #4f46e5;
+  padding: 6px 10px;
+  border-radius: 999px  !important;
+  font-weight: 800;
+  cursor: pointer;
+}
+#${TOAST_ID} .btn:hover{ background: rgba(99,102,241,.16); }
+#${TOAST_ID} .x{
+  width: 30px; height: 30px;
+  border-radius: 999px  !important;
+  border: 1px solid rgba(226,232,240,.9);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 900;
+  opacity: .7;
+}
+#${TOAST_ID} .x:hover{ opacity: 1; }
+@media (prefers-color-scheme: dark){
+  #${TOAST_ID}{
+    background: rgba(15,23,42,.88);
+    color: #f1f5f9;
+    border-color: rgba(51,65,85,.8);
+    box-shadow: 0 20px 50px rgba(0,0,0,.5);
+  }
+  #${TOAST_ID} .btn{
+    border-color: rgba(51,65,85,.9);
+    background: rgba(99,102,241,.16);
+    color: #c7d2fe;
+  }
+  #${TOAST_ID} .x{ border-color: rgba(51,65,85,.9); color:#f1f5f9; }
+}
+`;
+    const style = document.createElement("style");
+    style.id = TOAST_STYLE_ID;
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  function showToast(title, subtitle, { actionLabel, onAction } = {}) {
+    ensureToastStyle();
+
+    document.getElementById(TOAST_ID)?.remove();
+
+    const wrap = document.createElement("div");
+    wrap.id = TOAST_ID;
+
+    const msg = document.createElement("div");
+    msg.className = "msg";
+
+    const t = document.createElement("div");
+    t.className = "title";
+    t.textContent = title;
+
+    const s = document.createElement("div");
+    s.className = "sub";
+    s.textContent = subtitle || "";
+
+    msg.appendChild(t);
+    msg.appendChild(s);
+    wrap.appendChild(msg);
+
+    if (actionLabel && typeof onAction === "function") {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn";
+      btn.textContent = actionLabel;
+      btn.addEventListener("click", () => {
+        try {
+          onAction();
+        } finally {
+          wrap.remove();
+        }
+      });
+      wrap.appendChild(btn);
+    }
+
+    const x = document.createElement("button");
+    x.type = "button";
+    x.className = "x";
+    x.textContent = "×";
+    x.addEventListener("click", () => wrap.remove());
+    wrap.appendChild(x);
+
+    document.body.appendChild(wrap);
+    window.setTimeout(() => wrap.remove(), 4500);
+  }
+  // ===== /Toast UI =====
+
   function detectVerdictText(row) {
     const el = row.querySelector(".result, .status, .verdict, td[title]");
     let t = el ? el.textContent || el.getAttribute("title") || "" : "";
@@ -50,8 +170,11 @@
     const pids = Object.keys(updates);
     if (pids.length === 0) return false;
 
-    chrome.storage.local.get(null, (data) => {
-      const key = `user:${handle}`;
+    const appliedCount = pids.length;
+
+    const key = `user:${handle}`;
+    chrome.storage.local.get([key], (data) => {
+      const existed = !!data[key];
       const cur = data[key] || { solved: {}, attempts: {}, updatedAt: 0 };
       const now = Date.now();
 
@@ -68,7 +191,27 @@
       cur.updatedAt = now;
 
       // ✅ activeHandle은 popup에서만 관리 (여기서 덮어쓰지 않음)
-      chrome.storage.local.set({ [key]: cur, lastScrapedHandle: handle });
+      chrome.storage.local.set(
+        { [key]: cur, lastScrapedHandle: handle },
+        () => {
+          if (toastShown) return;
+          toastShown = true;
+
+          const title = existed ? "학생 업데이트 완료" : "학생 추가 완료";
+          const sub = `@${handle} · ${appliedCount}개 기록 반영 · ${new Date(
+            now
+          ).toLocaleString("ko-KR")}`;
+
+          showToast(title, sub, {
+            actionLabel: "학생 목록",
+            onAction: () =>
+              window.open(
+                chrome.runtime.getURL("options.html#students"),
+                "_blank"
+              ),
+          });
+        }
+      );
     });
 
     return true;

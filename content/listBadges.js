@@ -21,7 +21,6 @@ function safeStorageGet(keys, cb) {
   }
 }
 
-
 (() => {
   // 목록 페이지에서만 동작
   const path = location.pathname;
@@ -490,7 +489,6 @@ function safeStorageGet(keys, cb) {
           )}&problem_id=${encodeURIComponent(pid)}`;
           a.target = "_blank";
           a.rel = "noopener noreferrer";
-          chipsWrap.appendChild(a);
           chipsWrap.appendChild(a);
         });
       }
